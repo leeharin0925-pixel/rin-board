@@ -1,10 +1,8 @@
-import pool from "@/lib/db";
+export const dynamic = "force-dynamic";
+
+import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import DeleteButton from "./DeleteButton";
-import LikeButton from "./LikeButton";
-import CommentForm from "./CommentForm";
-import CommentList from "./CommentList";
+import pool from "@/lib/db";
 
 type Post = {
   id: number;
@@ -16,100 +14,82 @@ type Post = {
   likes: number;
 };
 
-type Comment = {
-  id: number;
-  post_id: number;
-  author: string;
-  content: string;
-  created_at: string;
-};
-
-type Props = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function PostDetailPage({ params }: Props) {
-  const { id } = await params;
-
-  // 게시글 조회
-  const postResult = await pool.query<Post>(
-    "SELECT * FROM posts WHERE id = $1",
-    [id]
+export default async function Home() {
+  const result = await pool.query<Post>(
+    "SELECT * FROM posts ORDER BY created_at DESC"
   );
-
-  if (postResult.rows.length === 0) {
-    notFound();
-  }
-
-  const post = postResult.rows[0];
-
-  // 댓글 조회
-  const commentsResult = await pool.query<Comment>(
-    "SELECT * FROM comments WHERE post_id = $1 ORDER BY created_at DESC",
-    [id]
-  );
-  const comments = commentsResult.rows;
+  const posts = result.rows;
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        <Link
-          href="/"
-          className="text-sm text-gray-600 hover:text-gray-900 mb-4 inline-block"
-        >
-          ← 목록으로
-        </Link>
+    <main className="min-h-screen bg-gray-50">
+      <section className="flex flex-col items-center justify-center pt-16 pb-12 px-4">
+        <Image
+          src="/banner.jpg"
+          alt="사내 게시판 배너"
+          width={300}
+          height={200}
+          className="mx-auto mb-6 rounded-lg"
+          priority
+        />
+        <h1 className="text-4xl font-bold text-gray-800 mb-4 text-center">
+          우리들의 행운 발견.zip
+        </h1>
+        <p className="text-lg text-gray-600 text-center">
+          맛집, 카페, 공간까지 슬쩍 공유하는 행운 저장소
+        </p>
+      </section>
 
-        {/* 게시글 영역 */}
-        <article className="bg-white rounded-lg shadow p-8 mb-6">
-          <header className="border-b border-gray-200 pb-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-3">
-              🍀 {post.title}
-            </h1>
-            <div className="flex items-center text-sm text-gray-500 gap-3">
-              <span>👤 {post.author}</span>
-              <span>•</span>
-              <span>
-                🕒{" "}
-                {new Date(post.created_at).toLocaleString("ko-KR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-          </header>
-
-          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed mb-8">
-            {post.content}
-          </div>
-
-          <div className="flex justify-center mb-6">
-            <LikeButton postId={post.id} initialLikes={post.likes} />
-          </div>
-
-          <div className="flex gap-2 pt-4 border-t border-gray-200">
-            <Link
-              href={`/posts/${post.id}/edit`}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition"
-            >
-              ✏️ 수정
-            </Link>
-            <DeleteButton postId={post.id} />
-          </div>
-        </article>
-
-        {/* 댓글 영역 */}
-        <section className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            💬 댓글 ({comments.length})
+      <section className="max-w-3xl mx-auto px-4 pb-16">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            🍀 행운 모음 ({posts.length})
           </h2>
-          <CommentForm postId={post.id} />
-          <CommentList postId={post.id} comments={comments} />
-        </section>
-      </div>
+          <Link
+            href="/posts/new"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+          >
+            + 행운 공유하기
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {posts.length === 0 ? (
+            <div className="p-12 text-center text-gray-500">
+              아직 공유된 행운이 없어요. 첫 행운을 나눠보세요! ✨
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {posts.map((post) => (
+                <li key={post.id} className="hover:bg-blue-50 transition">
+                  <Link href={`/posts/${post.id}`} className="block px-6 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                          🍀 {post.title}
+                        </h3>
+                        <div className="flex items-center text-sm text-gray-500 gap-3">
+                          <span>👤 {post.author}</span>
+                          <span>•</span>
+                          <span>
+                            🕒{" "}
+                            {new Date(post.created_at).toLocaleDateString(
+                              "ko-KR"
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-pink-500 text-sm font-medium shrink-0">
+                        <span>❤️</span>
+                        <span>{post.likes}</span>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
